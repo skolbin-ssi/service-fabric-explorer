@@ -26,6 +26,7 @@
     "@angular/platform-browser": "~9.0.2",
     "@angular/platform-browser-dynamic": "~9.0.2",
     "@angular/router": "~9.0.2",
+    "@microsoft/applicationinsights-web": "^2.4.4",
     "@ng-bootstrap/ng-bootstrap": "^6.0.0",
     "adal-angular": "^1.0.17",
     "bootstrap": "^4.4.1",

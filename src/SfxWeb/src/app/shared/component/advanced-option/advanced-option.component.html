@@ -9,5 +9,12 @@
             Advanced Mode
             <input type="checkbox" [(ngModel)]="status" (ngModelChange)="change()">
         </label>
+
+        <label ngbDropdownItem> 
+            <span class="mif-info" title="Set whether telemetry is enabled."
+            style="padding-right: 5px;"></span>
+            Enable Telemetry
+            <input type="checkbox" [(ngModel)]="telemetryService.telemetryEnabled" (ngModelChange)="telemetryChange()">
+        </label>
     </div>
 </div>
