@@ -20,9 +20,9 @@ export class TelemetryService {
     this.telemetryEnabled = this.storage.getValueBoolean(TelemetryService.localStorageKey, true);
     if(!this.storage.getValueBoolean(TelemetryService.localStoragePromptedTelemetryKey, false)) {
       const config = new MatSnackBarConfig();
-      // config.panelClass = ['background-red'];
-      config.duration = 15000;
+      config.duration = 30000;
       this.snackBar.openFromComponent(TelemetrySnackBarComponent, config);
+      this.storage.setValue(TelemetryService.localStoragePromptedTelemetryKey, true);
     }
 
     //enable telemetry
