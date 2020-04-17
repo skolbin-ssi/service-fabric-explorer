@@ -4,6 +4,7 @@ import { Router, NavigationEnd, ActivatedRoute, ActivationEnd } from '@angular/r
 import { StorageService } from './storage.service';
 import {MatSnackBar, MatSnackBarConfig} from '@angular/material/snack-bar';
 import { TelemetrySnackBarComponent } from '../telemetry-snack-bar/telemetry-snack-bar.component';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +28,7 @@ export class TelemetryService {
 
     //enable telemetry
     this.appInsights = new ApplicationInsights({ config: {
-      instrumentationKey: 'YOUR_INSTRUMENTATION_KEY_GOES_HERE',
+      instrumentationKey: environment.telemetryKey,
       isCookieUseDisabled: true,
       disableAjaxTracking: true,
       disableFetchTracking : true,
