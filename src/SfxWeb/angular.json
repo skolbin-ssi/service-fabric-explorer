@@ -15,10 +15,10 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
-          "options": {
+          "builder": "@angular-devkit/build-angular:browser",	
+            "options": {
             "outputPath": "dist",
-            "index": "src/beta.html",
+            "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
@@ -37,6 +37,11 @@
               "src/calender.scss",
               "src/_candybar.scss"
             ],
+            "allowedCommonJsDependencies": [
+              "lodash",
+              "nouislider",
+              "highcharts"
+           ],
             "scripts": [],
             "stylePreprocessorOptions": {
               "includePaths": [
@@ -44,6 +49,15 @@
             }
           },
           "configurations": {
+            "accesstesting": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.accesstesting.ts"
+                }
+              ],
+              "index": "src/index.html"
+            },
             "production": {
               "fileReplacements": [
                 {
@@ -54,7 +68,6 @@
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
-              "extractCss": true,
               "namedChunks": false,
               "extractLicenses": true,
               "vendorChunk": false,
@@ -75,7 +88,7 @@
           }
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular-devkit/build-angular:dev-server",	
           "options": {
             "browserTarget": "SfxWeb:build",
             "proxyConfig": "proxy.conf.js"
@@ -84,7 +97,10 @@
             "production": {
               "browserTarget": "SfxWeb:build:production"
             }
-          }
+          },
+          "allowedCommonJsDependencies": [
+            "lodash"
+          ]
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",

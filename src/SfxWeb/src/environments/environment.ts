@@ -4,9 +4,11 @@
 
 export const environment = {
   production: false,
-  baseUrl: "api",
-  version: "test",
-  assetBase: ""
+  baseUrl: 'api',
+  version: 'test',
+  assetBase: '',
+  showBeta: true,
+  telemetryKey: ''
 };
 
 /*

@@ -1,17 +1,19 @@
 import { Component, OnInit, Injector } from '@angular/core';
 import { DataService } from 'src/app/services/data.service';
-import { ClusterUpgradeProgress, ClusterHealth, HealthStatisticsEntityKind } from '../../../Models/DataModels/Cluster';
+import { ClusterUpgradeProgress, ClusterHealth, ClusterManifest } from '../../../Models/DataModels/Cluster';
 import { HealthStateFilterFlags } from 'src/app/Models/HealthChunkRawDataTypes';
 import { SystemApplication } from 'src/app/Models/DataModels/Application';
-import { Observable, forkJoin } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
 import { IResponseMessageHandler } from 'src/app/Common/ResponseMessageHandlers';
-import { BaseController } from 'src/app/ViewModels/BaseController';
+import { BaseControllerDirective } from 'src/app/ViewModels/BaseController';
 import { NodeCollection } from 'src/app/Models/DataModels/collections/NodeCollection';
 import { ListSettings } from 'src/app/Models/ListSettings';
 import { SettingsService } from 'src/app/services/settings.service';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { IDashboardViewModel, DashboardViewModel } from 'src/app/ViewModels/DashboardViewModels';
 import { RoutesService } from 'src/app/services/routes.service';
+import { HealthUtils, HealthStatisticsEntityKind } from 'src/app/Utils/healthUtils';
+import { RepairTaskCollection } from 'src/app/Models/DataModels/collections/RepairTaskCollection';
 
 
 @Component({
@@ -19,13 +21,15 @@ import { RoutesService } from 'src/app/services/routes.service';
   templateUrl: './essentials.component.html',
   styleUrls: ['./essentials.component.scss']
 })
-export class EssentialsComponent extends BaseController {
+export class EssentialsComponent extends BaseControllerDirective {
 
   clusterUpgradeProgress: ClusterUpgradeProgress;
   nodes: NodeCollection;
   clusterHealth: ClusterHealth;
   systemApp: SystemApplication;
   unhealthyEvaluationsListSettings: ListSettings;
+  clusterManifest: ClusterManifest;
+  repairtaskCollection: RepairTaskCollection;
 
   nodesDashboard: IDashboardViewModel;
   appsDashboard: IDashboardViewModel;
@@ -33,10 +37,10 @@ export class EssentialsComponent extends BaseController {
   partitionsDashboard: IDashboardViewModel;
   replicasDashboard: IDashboardViewModel;
   upgradesDashboard: IDashboardViewModel;
-  upgradeAppsCount: number = 0;
+  upgradeAppsCount = 0;
 
-  constructor(public data: DataService, 
-              public injector: Injector, 
+  constructor(public data: DataService,
+              public injector: Injector,
               public settings: SettingsService,
               private routes: RoutesService) {
     super(injector);
@@ -47,26 +51,27 @@ export class EssentialsComponent extends BaseController {
     this.clusterUpgradeProgress = this.data.clusterUpgradeProgress;
     this.nodes = this.data.nodes;
     this.systemApp = this.data.systemApp;
+    this.repairtaskCollection = this.data.repairCollection;
     this.unhealthyEvaluationsListSettings = this.settings.getNewOrExistingUnhealthyEvaluationsListSettings();
   }
 
   refresh(messageHandler?: IResponseMessageHandler): Observable<any> {
     return forkJoin([
       this.clusterHealth.refresh(messageHandler).pipe(map((clusterHealth: ClusterHealth) => {
-        let nodesHealthStateCount = clusterHealth.getHealthStateCount(HealthStatisticsEntityKind.Node);
-        this.nodesDashboard = DashboardViewModel.fromHealthStateCount("Nodes", "Node", true, nodesHealthStateCount, this.data.routes, this.routes.getNodesViewPath());
+        const nodesHealthStateCount = HealthUtils.getHealthStateCount(clusterHealth.raw, HealthStatisticsEntityKind.Node);
+        this.nodesDashboard = DashboardViewModel.fromHealthStateCount('Nodes', 'Node', true, nodesHealthStateCount, this.data.routes, RoutesService.getNodesViewPath());
 
-        let appsHealthStateCount = clusterHealth.getHealthStateCount(HealthStatisticsEntityKind.Application);
-        this.appsDashboard = DashboardViewModel.fromHealthStateCount("Applications", "Application", true, appsHealthStateCount, this.data.routes, this.routes.getAppsViewPath());
+        const appsHealthStateCount = HealthUtils.getHealthStateCount(clusterHealth.raw, HealthStatisticsEntityKind.Application);
+        this.appsDashboard = DashboardViewModel.fromHealthStateCount('Applications', 'Application', true, appsHealthStateCount, this.data.routes, RoutesService.getAppsViewPath());
 
-        let servicesHealthStateCount = clusterHealth.getHealthStateCount(HealthStatisticsEntityKind.Service);
-        this.servicesDashboard = DashboardViewModel.fromHealthStateCount("Services", "Service", false, servicesHealthStateCount);
+        const servicesHealthStateCount = HealthUtils.getHealthStateCount(clusterHealth.raw, HealthStatisticsEntityKind.Service);
+        this.servicesDashboard = DashboardViewModel.fromHealthStateCount('Services', 'Service', false, servicesHealthStateCount);
 
-        let partitionsDashboard = clusterHealth.getHealthStateCount(HealthStatisticsEntityKind.Partition);
-        this.partitionsDashboard = DashboardViewModel.fromHealthStateCount("Partitions", "Partition", false, partitionsDashboard);
+        const partitionsDashboard = HealthUtils.getHealthStateCount(clusterHealth.raw, HealthStatisticsEntityKind.Partition);
+        this.partitionsDashboard = DashboardViewModel.fromHealthStateCount('Partitions', 'Partition', false, partitionsDashboard);
 
-        let replicasHealthStateCount = clusterHealth.getHealthStateCount(HealthStatisticsEntityKind.Replica);
-        this.replicasDashboard = DashboardViewModel.fromHealthStateCount("Replicas", "Replica", false, replicasHealthStateCount);
+        const replicasHealthStateCount = HealthUtils.getHealthStateCount(clusterHealth.raw, HealthStatisticsEntityKind.Replica);
+        this.replicasDashboard = DashboardViewModel.fromHealthStateCount('Replicas', 'Replica', false, replicasHealthStateCount);
         clusterHealth.checkExpiredCertStatus();
     })),
       this.data.getApps(true, messageHandler)
@@ -74,8 +79,15 @@ export class EssentialsComponent extends BaseController {
                     this.upgradeAppsCount = apps.collection.filter(app => app.isUpgrading).length;
                 })),
       this.nodes.refresh(messageHandler),
-      this.systemApp.refresh(messageHandler),
-      this.clusterUpgradeProgress.refresh(messageHandler)
+      this.systemApp.refresh(messageHandler).pipe(catchError(err => of(null))),
+      this.clusterUpgradeProgress.refresh(messageHandler),
+      this.data.getClusterManifest().pipe(map((manifest) => {
+        if (manifest.isRepairManagerEnabled) {
+          return this.repairtaskCollection.refresh(messageHandler);
+        }else{
+          return of(null);
+        }
+      }))
     ]);
   }
 

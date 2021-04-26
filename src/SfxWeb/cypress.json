@@ -1,0 +1,11 @@
+{
+    "baseUrl": "http://localhost:3000",
+    "env" : {
+        "API_PREFIX": ""
+    },
+    "requestTimeout" : 10000,
+    "retries": {
+        "runMode": 2,
+        "openMode": 0
+      }
+}
