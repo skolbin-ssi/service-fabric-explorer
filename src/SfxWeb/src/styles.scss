@@ -75,10 +75,9 @@ $SfxWeb-theme: mat-light-theme($SfxWeb-primary, $SfxWeb-accent, $SfxWeb-warn);
         color: $detail-tab-color;
         margin-left: 0;
         font-size: $detail-tab-title-font-size;
-        // set padding instead of margin to avoid jumping of collapsed section
         margin-top: 0;
-        padding-top: 7px;
-        margin-bottom: 10px;
+        padding-top: 0px;
+        margin-bottom: 0px;
     }
 
     h4.no-uppercase {
@@ -94,12 +93,8 @@ $SfxWeb-theme: mat-light-theme($SfxWeb-primary, $SfxWeb-accent, $SfxWeb-warn);
 }
 
 .right-panel {
-    // position: absolute;
-    // left: $left-panel-width;
-    // right: 20px;
-    // top: 50px;
-    // bottom: 20px;
     padding-left: 20px;
+    padding-right: 15px;
     overflow: hidden;
     min-width: $right-panel-min-width;
     background-color: $right-panel-background-color;
@@ -382,7 +377,7 @@ table.detail-list {
 .badge-container {
     display: inline;
     white-space: nowrap;
-    overflow: hidden;
+    // overflow: hidden;
     text-overflow: ellipsis;
 }
 
@@ -571,6 +566,9 @@ app-navbar {
     border-width: 10px;
     border-radius: 10px;
   }
+  .vis-item.vis-range {
+      border-radius: 0px;
+  }
   .vis-item.vis-selected {
     border-color: green;
     background-color: lightgreen;
@@ -694,6 +692,11 @@ app-navbar {
 
   .noUi-tooltip {
     display: none;
+    background-color: #262626;
+    border: 1px solid #0075c9;
+    color: white;
+    border-radius: 0px;
+    z-index: 2;
   }
   .noUi-handle {
       &:focus {
@@ -834,13 +837,14 @@ app-navbar {
     padding: 5px 5px 1px 0px;
     text-overflow: ellipsis;
     overflow: hidden;
-    font-size: 8pt;
-    font-weight: 400;
+    font-size: 10pt;
+    font-weight: 600;
 }
 
 .essential-body {
     text-overflow: ellipsis;
     overflow: hidden;
+    font-size: 9pt;
 }
 
 .essential-item {
@@ -848,7 +852,7 @@ app-navbar {
     text-align: left;
     text-overflow: ellipsis;
     overflow: hidden;
-    min-width: 150px;
+    min-width: 180px;
 }
 
 .essential-container {
@@ -881,6 +885,7 @@ app-navbar {
 }
 
 .tile-container {
+    width: 100%;
     display: grid;
     grid-auto-flow: dense;
     grid-template-columns: repeat(auto-fit, $tile-width);
@@ -895,4 +900,9 @@ app-navbar {
         filter: brightness(100%);
         background-color: rgba(255, 255, 255, 0.1);
     }
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
 }

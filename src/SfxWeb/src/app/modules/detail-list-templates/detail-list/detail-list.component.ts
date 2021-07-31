@@ -34,6 +34,7 @@ export class DetailListComponent implements OnInit, OnDestroy {
   @Input() listSettings: ListSettings;
   @Input() searchText = 'Search list';
   @Input() isLoading = false;
+  @Input() successfulLoad = true;
   @Output() sorted = new EventEmitter<any[]>();
   @Output() sortOrdering = new EventEmitter<ISortOrdering>();
 
@@ -54,8 +55,8 @@ export class DetailListComponent implements OnInit, OnDestroy {
   @Input()
   set list(data: any[] | DataModelCollectionBase<any>) {
     if (data instanceof DataModelCollectionBase){
-      data.ensureInitialized().subscribe(resp => {
-        this.iList = [].concat(resp.collection);
+      data.ensureInitialized().subscribe(() => {
+        this.iList = [].concat(data.collection);
         this.updateList();
       });
     }else{
