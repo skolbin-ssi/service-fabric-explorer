@@ -10,6 +10,8 @@ const EVENT_TABS='[data-cy=eventtabs]'
 const OPTION_PICKER='[data-cy=option-picker]'
 const SELECT_EVENT_TYPES='[sectionName=select-event-types]'
 
+const serviceName = "VisualObjectsApplicationType~VisualObjects.ActorService";
+
 context('Cluster page', () => {
 
   beforeEach(() => {
@@ -52,34 +54,80 @@ context('Cluster page', () => {
   })
 
   describe("details", () => {
-
-    it('upgrade in progress', () => {
-      cy.intercept('GET', upgradeProgress_route, { fixture: 'upgrade-in-progress.json' }).as("inprogres");
-
+    beforeEach(() => {
       cy.intercept('GET', apiUrl('/Partitions/guidID?*'), { fixture: 'cluster-page/upgrade/get-partition-info.json' });
       cy.intercept('GET', apiUrl('/Partitions/guidID/$/GetServiceName?*'), { fixture: 'cluster-page/upgrade/get-service-name.json' });
       cy.intercept('GET', apiUrl('/Services/VisualObjectsApplicationType~VisualObjects.ActorService/$/GetApplicationName?*'), { fixture: 'cluster-page/upgrade/get-application-info.json' }).as('appinfo');
+    })
+
+    it('upgrade in progress', () => {
+      cy.intercept('GET', upgradeProgress_route, { fixture: 'upgrade-in-progress.json' }).as("inprogres");
 
       cy.visit('/#/details')
 
       cy.wait("@inprogres")
 
       cy.contains('Cluster Upgrade In Progress')
-      cy.get('[data-cy=currentud]').within(() => {
-        cy.contains('1 - Upgrading ').click();
 
-        cy.contains('guidID')
-        cy.contains('WaitForPrimarySwap')
-        cy.contains('Get Info').click();
+      cy.get('[data-cy=currentud]').within(() => {
+        cy.contains('Node : 1').click();
 
         cy.wait('@appinfo');
 
-        cy.contains('Application name : VisualObjectsApplicationType')
-        cy.contains('Minimum Replica Set Size : 2')
+        cy.contains('guidID')
+        cy.contains('WaitForPrimarySwap')
+        cy.contains(serviceName)
+      })
 
-        cy.get('[data-cy=cud]').within(() => {
-          cy.contains('4')
-        })
+      cy.get('[data-cy=upgrade-bar]').within(() => {
+        cy.contains('Upgrade Duration : 55:04 minutes')
+      })
+
+      cy.get('[data-cy=upgrade-bar-domain]').within(() => {
+        cy.contains('74 milliseconds')
+      })
+    })
+
+    it('upgrade in progress - Node by Node', () => {
+      cy.intercept('GET', upgradeProgress_route, { fixture: 'cluster-page/upgrade/upgrade-in-progress-node-by-node.json' }).as("inprogres");
+
+      cy.visit('/#/details')
+
+      cy.wait("@inprogres")
+
+      cy.contains('Cluster Upgrade In Progress')
+
+      cy.get('[data-cy=currentud]').within(() => {
+        cy.contains('MyNode2').click();
+      })
+
+      cy.contains('Node by Node')
+
+      cy.get('[data-cy=upgrade-bar]').should('not.exist')
+
+      cy.get('[data-cy=upgrade-bar-domain]').should('not.exist');
+    })
+
+    it('upgrade in progress - no auto load safety checks', () => {
+      cy.intercept('GET', upgradeProgress_route, { fixture: 'cluster-page/upgrade/upgrade-in-progress-many-safety-checks.json' }).as("inprogres");
+
+      cy.visit('/#/details')
+
+      cy.wait("@inprogres")
+
+      cy.get('[data-cy=currentud]').within(() => {
+        cy.contains('Node : 1').click();
+
+        cy.contains('guidID')
+        cy.contains('WaitForPrimarySwap')
+        cy.contains(serviceName).should('not.exist');
+
+        checkTableSize(7);
+
+        cy.contains('Load').click();
+        cy.wait('@appinfo');
+        cy.contains(serviceName)
+
       })
     })
 
@@ -250,9 +298,9 @@ context('Cluster page', () => {
         cy.contains(CLUSTER_TAB_NAME)
         cy.get('[text=Error]')
       })
-      
+
       cy.contains(FAILED_LOAD_TEXT);
-      checkTableErrorMessage(FAILED_TABLE_TEXT); 
+      checkTableErrorMessage(FAILED_TABLE_TEXT);
     })
   })
 

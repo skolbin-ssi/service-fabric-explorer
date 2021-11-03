@@ -5,6 +5,8 @@ import { apiUrl, addDefaultFixtures, checkTableSize, FIXTURE_REF_NODES, nodes_ro
 const nodeName = "_nt_0"
 const nodeInfoRef = "@getnodeInfo"
 
+const seedNodeQuoromRef = '[data-cy=seedNodeQuorom]';
+
 context('node page', () => {
     beforeEach(() => {
         addDefaultFixtures();
@@ -60,6 +62,8 @@ context('node page', () => {
             })
 
             cy.get('[data-cy=deactivated').should('not.exist');
+            cy.get('[data-cy=repair-jobs').should('not.exist');
+
         })
 
         it('down node', () => {
@@ -90,8 +94,34 @@ context('node page', () => {
 
             cy.get('[data-cy=deactivated]').within(() => {
                 cy.contains("86fa6852ad467a903afbbc67edc16b66");
+                cy.get(seedNodeQuoromRef).should('not.exist');
             })
         })
+
+        it('deactivated - show seed node quorom warning', () => {
+          addRoute("deactivatedNode", "node-page/deactivated-node-seed-node-quorom.json", apiUrl(`/Nodes/${nodeName}/?*`));
+          addRoute(FIXTURE_NODES, "node-page/node-list-seed-node-quorom.json", nodes_route);
+
+          cy.visit(`/#/node/${nodeName}`);
+
+          cy.wait("@getdeactivatedNode");
+
+          cy.get('[data-cy=deactivated]').within(() => {
+            cy.get(seedNodeQuoromRef);
+          })
+      })
+
+        it('repair jobs', () => {
+          addRoute('repairs', 'node-page/repair-jobs.json', apiUrl('/$/GetRepairTaskList?*'))
+
+          cy.visit(`/#/node/${nodeName}`);
+
+          cy.wait("@getrepairs");
+
+          cy.get('[data-cy=repair-jobs]').within(() => {
+              cy.contains("Azure/TenantUpdate/441efe72-c74d-4cfa-84df-515b44c89060/4/1555");
+          })
+      })
 
     })
 

@@ -10,6 +10,8 @@ import { DataGroup, DataItem, DataSet } from 'vis-timeline/standalone/esm';
 import { DataModelCollectionBase } from 'src/app/Models/DataModels/collections/CollectionBase';
 import { ListSettings } from 'src/app/Models/ListSettings';
 import { IOptionConfig, IOptionData } from '../option-picker/option-picker.component';
+import { TelemetryService } from 'src/app/services/telemetry.service';
+import { TelemetryEventNames } from 'src/app/Common/Constants';
 
 export interface IQuickDates {
     display: string;
@@ -33,7 +35,7 @@ export interface IEventStoreData<T extends DataModelCollectionBase<any>, S> {
 })
 export class EventStoreComponent implements OnInit, OnDestroy {
 
-  constructor(public dataService: DataService) { }
+  constructor(public dataService: DataService, private telemService: TelemetryService) { }
 
   public get showAllEvents() { return this.pshowAllEvents; }
   public set showAllEvents(state: boolean) {
@@ -45,11 +47,11 @@ export class EventStoreComponent implements OnInit, OnDestroy {
   private debouncerHandlerSubscription: Subscription;
 
   public quickDates = [
-      { display: '1 hours', hours: 1 },
-      { display: '3 hours', hours: 3 },
-      { display: '6 hours', hours: 6 },
-      { display: '1 day', hours: 24 },
-      { display: '7 days', hours: 168 }
+      { display: '1 Hour', hours: 1 },
+      { display: '3 Hours', hours: 3 },
+      { display: '6 Hours', hours: 6 },
+      { display: '1 Day', hours: 24 },
+      { display: '7 Days', hours: 168 }
   ];
 
   @Input() listEventStoreData: IEventStoreData<any, any>[];
@@ -75,8 +77,8 @@ export class EventStoreComponent implements OnInit, OnDestroy {
       this.debouncerHandlerSubscription = this.debounceHandler
           .pipe(debounceTime(400), distinctUntilChanged())
           .subscribe(dates => {
-              this.startDate = dates.startDate;
-              this.endDate = dates.endDate;
+              this.startDate = new Date(dates.startDate);
+              this.endDate = new Date(dates.endDate);
               this.setNewDateWindow();
           });
   }
@@ -105,7 +107,15 @@ export class EventStoreComponent implements OnInit, OnDestroy {
 
   private setNewDateWindow(forceRefresh: boolean = false): void {
       // If the data interface has that function implemented, we call it. If it doesn't we discard it by returning false.
-      const refreshData = this.listEventStoreData.some(data => data.setDateWindow ? data.setDateWindow(this.startDate, this.endDate) : false);
+      let refreshData = false;
+
+      this.listEventStoreData.forEach(data => {
+        if (data.setDateWindow) {
+          if (data.setDateWindow(this.startDate, this.endDate)) {
+            refreshData = true;
+          }
+        }
+      });
 
       if (refreshData || forceRefresh) {
           this.setTimelineData();
@@ -136,6 +146,11 @@ export class EventStoreComponent implements OnInit, OnDestroy {
       this.failedRefresh = false;
       const addNestedGroups = this.listEventStoreData.length > 1;
 
+      // only emit metrics when more than 1 event type is added
+      if (this.listEventStoreData.length > 1) {
+        const names = this.listEventStoreData.map(item => item.displayName).sort();
+        this.telemService.trackActionEvent(TelemetryEventNames.CombinedEventStore, {value: names.toString()}, names.toString());
+      }
       for (const data of this.listEventStoreData) {
           if (data.eventsList.lastRefreshWasSuccessful){
               try {
