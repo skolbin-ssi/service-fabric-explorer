@@ -23,10 +23,6 @@ export class BaseComponent extends ServiceBaseControllerDirective {
     {
       name: 'details',
       route: './details'
-    },
-    {
-      name: 'events',
-      route: './events'
     }
   ];
   constructor(protected dataService: DataService, injector: Injector, private tree: TreeService) {
@@ -68,7 +64,7 @@ export class BaseComponent extends ServiceBaseControllerDirective {
 
   refresh(messageHandler?: IResponseMessageHandler): Observable<any>{
     return this.data.clusterManifest.ensureInitialized().pipe(map(() => {
-      this.tabs = this.tabs.filter(tab => tab.name !== 'backup');
+      this.tabs = this.tabs.filter(tab => tab.name !== 'backup' && tab.name !== 'infrastructure jobs');
 
       if (this.data.clusterManifest.isBackupRestoreEnabled && this.service.isStatefulService
           && this.appTypeName !== Constants.SystemAppTypeName) {
@@ -76,6 +72,13 @@ export class BaseComponent extends ServiceBaseControllerDirective {
             name: 'backup',
             route: './backup'
           });
+      }
+      if (this.service.description.raw.ServiceTypeName === Constants.InfrastructureServiceType)
+      {
+        this.tabs.push({
+          name: 'infrastructure jobs',
+          route: './infrastructurejobs'
+        });
       }
     }));
   }

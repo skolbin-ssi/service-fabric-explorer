@@ -10,19 +10,21 @@ export enum RepairJobType {
     TenantMaintenance = 'TenantMaintenance',
     PlatformMaintenance = 'PlatformMaintenance'
 }
-export interface IRepairTaskHistoryPhase {
-    timestamp: string;
-    phase: string;
-    duration: string;
-    durationMilliseconds: number;
-    displayInfo: IDisplayStatus;
+
+export enum Status {
+  unstarted = -1,
+  inProgress = 0,
+  finsihed = 1
 }
 
-export interface IDisplayStatus {
-    badgeIcon: string;
-    status: string;
-    statusCss: string;
-}
+export interface IRepairTaskHistoryPhase {
+    timestamp: string;
+    name: string;
+    duration: string;
+    durationMilliseconds: number;
+    textRight: string;
+    status: Status;
+  }
 
 export interface IRepairTaskPhase {
     name: string;
@@ -32,6 +34,7 @@ export interface IRepairTaskPhase {
     startCollapsed: boolean;
     status: string;
     statusCss: string;
+    currentPhase: number;
 }
 
 export enum StatusCSS {
@@ -39,28 +42,6 @@ export enum StatusCSS {
     InProgress = 'repair-blue',
     NotStarted = 'repair-gray'
 }
-
-// TEMPLATES FOR DISPLAYING STATUS
-export const FinishedStatus: IDisplayStatus = {
-    badgeIcon: 'mif-done',
-    status: 'This step is Finished',
-    statusCss: StatusCSS.Finished
-};
-
-
-export const InProgressStatus: IDisplayStatus = {
-    badgeIcon: 'mif-spinner4',
-    status: 'This step is in progress',
-    statusCss: StatusCSS.InProgress
-};
-
-
-export const NotStartedStatus: IDisplayStatus = {
-    badgeIcon: '',
-    status: 'This step is not started',
-    statusCss: StatusCSS.NotStarted
-};
-
 
 
 export class RepairTask extends DataModelBase<IRawRepairTask> {
@@ -92,7 +73,7 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
 
     public executorData: any;
 
-    constructor(public dataService: DataService, public raw: IRawRepairTask, private dateRef: Date = new Date()) {
+    constructor(public dataService: DataService, public raw: IRawRepairTask, private dateRef?: Date) {
         super(dataService, raw);
         this.updateInternal();
     }
@@ -103,6 +84,10 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
     public get startTime(): Date {
         return new Date(this.raw.History.ExecutingUtcTimestamp === RepairTask.NonStartedTimeStamp ? this.raw.History.CreatedUtcTimestamp :
             this.raw.History.ExecutingUtcTimestamp);
+    }
+
+    private getRefDate() {
+      return this.dateRef || new Date();
     }
 
     private parseHistory() {
@@ -127,7 +112,7 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
 
         this.history = history.map((phase, index) => {
             let duration = '';
-            let displayInfo: IDisplayStatus = NotStartedStatus;
+            let status: Status = Status.unstarted;
             let phaseDuration = 0;
 
             if (index < (history.length - 1)) {
@@ -138,26 +123,28 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
                 if (nextPhase.timestamp !== RepairTask.NonStartedTimeStamp) {
                     phaseDuration = new Date(nextPhase.timestamp).getTime() - new Date(phase.timestamp).getTime();
                     duration = TimeUtils.formatDurationAsAspNetTimespan(phaseDuration);
-                    displayInfo = FinishedStatus;
+                    status = Status.finsihed;
                 } else if (phase.timestamp !== RepairTask.NonStartedTimeStamp) {
-                    phaseDuration = this.dateRef.getTime() - new Date(phase.timestamp).getTime();
+                    phaseDuration = this.getRefDate().getTime() - new Date(phase.timestamp).getTime();
                     duration = TimeUtils.formatDurationAsAspNetTimespan(phaseDuration);
-                    displayInfo = InProgressStatus;
+                    status = Status.inProgress;
                 }
             }
 
             // handle completed phase which does not have a duration
             if (index === (history.length - 1)) {
                 if (phase.timestamp !== RepairTask.NonStartedTimeStamp) {
-                    displayInfo = FinishedStatus;
+                    status = Status.finsihed;
                 }
             }
 
             return {
-                ...phase,
+                // ...phase,
+                name: phase.phase,
                 timestamp: phase.timestamp === RepairTask.NonStartedTimeStamp ? '' : phase.timestamp,
                 duration,
-                displayInfo,
+                textRight: duration,
+                status,
                 durationMilliseconds: phaseDuration,
             };
         });
@@ -168,6 +155,7 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
 
         let duration = 0;
         let status = -1;
+        let currentPhase = 0;
 
         // check all of the phases and if any are in progress, default to not started
         // set the phase to at least 0 saying in progress
@@ -175,13 +163,15 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
         phases.forEach((phase, index) => {
             duration += phase.durationMilliseconds;
 
-            if (phase.displayInfo === InProgressStatus) {
+            if (phase.status === Status.inProgress) {
                 status = 0;
+                currentPhase = index + 1;
             }
 
             if ((index + 1) === phases.length) {
-                if (phase.displayInfo === FinishedStatus) {
+                if (phase.status === Status.finsihed) {
                     status = 1;
+                    currentPhase = phases.length + 1;
                 }
             }
         });
@@ -218,10 +208,11 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
             name,
             status: statusText,
             statusCss,
-            duration: TimeUtils.formatDurationAsAspNetTimespan(duration),
+            duration: TimeUtils.formatDurationAsAspNetTimespan(duration), //same as textRight
             durationMilliseconds: duration,
             phases,
-            startCollapsed
+            startCollapsed,
+            currentPhase
         };
     }
 
@@ -234,7 +225,7 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
 
         const start = new Date(this.createdAt).getTime();
         if (this.inProgress) {
-            const now = this.dateRef.getTime();
+            const now = this.getRefDate().getTime();
             this.duration = now - start;
         } else {
             this.duration = new Date(this.raw.History.CompletedUtcTimestamp).getTime() - start;
@@ -268,7 +259,7 @@ export class RepairTask extends DataModelBase<IRawRepairTask> {
     }
 
     public getPhase(phase: string): IRepairTaskHistoryPhase {
-        return this.history.find(historyPhase => historyPhase.phase === phase);
+        return this.history.find(historyPhase => historyPhase.name === phase);
     }
 
     public tooltipInfo() {
