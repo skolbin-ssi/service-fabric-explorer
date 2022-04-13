@@ -51,6 +51,18 @@ context('Cluster page', () => {
       cy.contains('Thumbprint : 52b0278d37cbfe68f8cdf04f423a994d66ceb932')
     })
 
+    it('long running job in approval', () => {
+      cy.intercept(repairTask_route, { fixture: 'cluster-page/repair-jobs/long-running-approval.json' })
+
+      cy.visit('')
+
+      cy.contains('Action Required: There is a repair job (longrunningapprovaljobid) waiting for approval for')
+
+      cy.get('[title="Repair Jobs In Progress"]').within(() => {
+        cy.contains('1');
+      })
+    })
+
   })
 
   describe("details", () => {
@@ -86,6 +98,22 @@ context('Cluster page', () => {
       cy.get('[data-cy=upgrade-bar-domain]').within(() => {
         cy.contains('74 milliseconds')
       })
+
+      cy.get('[data-cy=manualmode]').should('not.exist')
+
+      cy.get('[data-cy=upgradeHealthEvents]').within(() => {
+        checkTableSize(4);
+      })
+
+    })
+
+    it('upgrade in progress - manual mode', () => {
+      cy.intercept('GET', upgradeProgress_route, { fixture: 'cluster-page/upgrade/manual-mode-upgrade.json' }).as("upgrade");
+      cy.visit('/#/details')
+
+      cy.wait("@upgrade")
+
+      cy.get('[data-cy=manualmode]').should('exist')
     })
 
     it('upgrade in progress - Node by Node', () => {
@@ -128,6 +156,27 @@ context('Cluster page', () => {
         cy.wait('@appinfo');
         cy.contains(serviceName)
 
+      })
+    })
+
+    it('failed upgrade', () => {
+      cy.intercept('GET', upgradeProgress_route, { fixture: 'cluster-page/upgrade/failed-upgrade.json' }).as("inprogres");
+
+      cy.visit('/#/details')
+
+      cy.wait("@inprogres")
+
+      cy.get('[data-cy=failedupgrade]').within(() => {
+
+        cy.get('[data-cy=failureoverview]').within(() => {
+          cy.contains('UpgradeDomainTimeout');
+          cy.contains('2022-03-10T16:13:59.906Z');
+        })
+
+        cy.get('[data-cy=failedud]').within(() => {
+          cy.contains('b-hrs-1_2');
+          cy.get('[data-cy=failedphase]')
+        })
       })
     })
 
@@ -256,6 +305,171 @@ context('Cluster page', () => {
     })
   })
 
+  describe("back up restore", () => {
+    it('load  page and create', () => {
+      addRoute('loadBRS', 'backup-restore/backup-policy.json', apiUrl('/BackupRestore/BackupPolicies/?*'))
+
+      cy.visit('/#/backups')
+
+      checkTableSize(1);
+    })
+
+    describe("create", () => {
+      const createBRS = "createBRS";
+      const aliasedCreateBRS = "@" + createBRS;
+
+      const submitButton = "[data-cy=submit]";
+
+      //form properties
+      const name = "newbrs";
+      const maxIncBackups = 2;
+      const interval = "PT15M";
+
+      beforeEach(() => {
+        cy.intercept('POST', apiUrl(`/BackupRestore/BackupPolicies/$/Create?*`), { statusCode: 200 }).as(createBRS)
+
+        cy.visit('/#/backups')
+
+        cy.contains('Backup Actions').click();
+        cy.contains(" Create Backup Policy ").click();
+
+        //fill in the form
+        cy.get("[formcontrolname=Name]").type(name);
+        cy.get("[formcontrolname=MaxIncrementalBackups]").type(maxIncBackups);
+        cy.get("[formcontrolname=Interval]").type(interval);
+      })
+
+      it('create by AzureBlobStore - toggle autoRestoreOnDataLoss', () => {
+        cy.get("[formcontrolname=ConnectionString]").type("constring");
+        cy.get("[formcontrolname=AutoRestoreOnDataLoss]").click();
+
+        cy.get(submitButton).click();
+
+        cy.wait(aliasedCreateBRS)
+
+        cy.get(aliasedCreateBRS).its('request.body')
+          .should('deep.equal',{
+            "Name": name,
+            "AutoRestoreOnDataLoss": true,
+            "MaxIncrementalBackups": maxIncBackups,
+            "Schedule": {
+              "ScheduleKind": "FrequencyBased",
+              "ScheduleFrequencyType": "",
+              "RunDays": [],
+              "RunTimes": [],
+              "Interval": "PT15M"
+            },
+            "Storage": {
+              "StorageKind": "AzureBlobStore",
+              "FriendlyName": "",
+              "Path": "",
+              "ConnectionString": "constring",
+              "ContainerName": "",
+              "BlobServiceUri": "",
+              "ManagedIdentityType": "",
+              "PrimaryUserName": "",
+              "PrimaryPassword": "",
+              "SecondaryUserName": "",
+              "SecondaryPassword": ""
+            }
+          })
+      })
+
+
+      it('create by ManagedIdentityAzureBlobStore', () => {
+        cy.get("[value=ManagedIdentityAzureBlobStore]").click();
+
+        cy.get("[formcontrolname=BlobServiceUri]").type("BSUURI");
+        cy.get("[formcontrolname=ContainerName]").type("sillycontainername");
+        cy.get("[value=Cluster]").click();
+
+        cy.get(submitButton).click();
+
+        cy.wait(aliasedCreateBRS)
+
+        cy.get(aliasedCreateBRS).its('request.body')
+          .should('deep.equal', {
+            "Name": name,
+            "AutoRestoreOnDataLoss": false,
+            "MaxIncrementalBackups": maxIncBackups,
+            "Schedule": {
+              "ScheduleKind": "FrequencyBased",
+              "ScheduleFrequencyType": "",
+              "RunDays": [],
+              "RunTimes": [],
+              "Interval": interval
+            },
+            "Storage": {
+              "StorageKind": "ManagedIdentityAzureBlobStore",
+              "FriendlyName": "",
+              "Path": "",
+              "ConnectionString": "",
+              "ContainerName": "sillycontainername",
+              "BlobServiceUri": "BSUURI",
+              "ManagedIdentityType": "Cluster",
+              "PrimaryUserName": "",
+              "PrimaryPassword": "",
+              "SecondaryUserName": "",
+              "SecondaryPassword": ""
+            }
+          })
+      })
+
+
+      it('create by FileShare - time based', () => {
+        cy.get("[value=TimeBased]").click();
+        cy.get("[value=Weekly]").click();
+        cy.contains("Monday").click();
+        cy.contains("Tuesday").click();
+        cy.contains("Saturday").click();
+
+        //untoggle
+        cy.contains("Monday").click();
+
+        cy.get("[value=FileShare]").click();
+        cy.get("[formcontrolname=Path]").type("somePath")
+        cy.get("[formcontrolname=PrimaryUserName]").type("username")
+        cy.get("[formcontrolname=PrimaryPassword]").type("password")
+
+        cy.get("[formcontrolname=IsEmptySecondaryCredential]").click();
+
+        cy.get(submitButton).click();
+
+        cy.wait(aliasedCreateBRS)
+        cy.get(aliasedCreateBRS).its('request.body').should('deep.equal',
+        {
+          "Name": name,
+          "AutoRestoreOnDataLoss": false,
+          "MaxIncrementalBackups": maxIncBackups,
+          "Schedule": {
+            "ScheduleKind": "TimeBased",
+            "ScheduleFrequencyType": "Weekly",
+            "RunDays": [
+              "Tuesday",
+              "Saturday"
+            ],
+            "RunTimes": [],
+            "Interval": "PT15M"
+          },
+          "Storage": {
+            "StorageKind": "FileShare",
+            "FriendlyName": "",
+            "Path": "somePath",
+            "ConnectionString": "",
+            "ContainerName": "",
+            "BlobServiceUri": "",
+            "ManagedIdentityType": "",
+            "PrimaryUserName": "username",
+            "PrimaryPassword": "password",
+            "SecondaryUserName": "",
+            "SecondaryPassword": ""
+          }
+        })
+      })
+
+    })
+
+  })
   describe("events", () => {
     const setup = (fileCluster, fileTasks) => {
       addRoute('events', fileCluster, apiUrl(`/EventsStore/Cluster/Events?*`))
