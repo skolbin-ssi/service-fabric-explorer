@@ -13,10 +13,13 @@ import { ViewUpgradesListItemComponent } from './view-upgrades-list-item/view-up
 import { UpgradeProgressModule } from 'src/app/modules/upgrade-progress/upgrade-progress.module';
 import { ApptypesComponent } from './apptypes/apptypes.component';
 import { ApptypesViewerModule } from 'src/app/modules/apptypes-viewer/apptypes-viewer.module';
+import { CommandsComponent } from './commands/commands.component';
+import { PowershellCommandsModule } from 'src/app/modules/powershell-commands/powershell-commands.module';
+import { ChartsModule } from 'src/app/modules/charts/charts.module';
 
 
 @NgModule({
-  declarations: [BaseComponent, AllComponent, UpgradingComponent, EventsComponent, ViewUpgradesListItemComponent, ApptypesComponent],
+  declarations: [BaseComponent, AllComponent, UpgradingComponent, EventsComponent, ViewUpgradesListItemComponent, ApptypesComponent, CommandsComponent],
   imports: [
     CommonModule,
     ApplicationsRoutingModule,
@@ -24,7 +27,9 @@ import { ApptypesViewerModule } from 'src/app/modules/apptypes-viewer/apptypes-v
     DetailListTemplatesModule,
     EventStoreModule,
     UpgradeProgressModule,
-    ApptypesViewerModule
+    ApptypesViewerModule,
+    PowershellCommandsModule,
+    ChartsModule
   ]
 })
 export class ApplicationsModule { }

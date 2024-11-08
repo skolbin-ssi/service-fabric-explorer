@@ -24,13 +24,10 @@ export class ReplicaOnPartition extends DataModelBase<IRawReplicaOnPartition> {
         decorators: {
             LastInBuildDurationInSeconds: {
                 displayName: (name) => 'Last In Build Duration',
-                displayValueInHtml: (value) => this.lastInBuildDuration
-            },
-            NodeName: {
-                displayValueInHtml: (value) => HtmlUtils.getLinkHtml(value, this.nodeViewPath)
+                displayValue: (value) => this.lastInBuildDuration
             },
             ReplicaRole: {
-                displayValueInHtml: (value) => this.role
+              displayValue: (value) => this.role
             }
         }
     };
@@ -120,9 +117,15 @@ export class ReplicaOnPartition extends DataModelBase<IRawReplicaOnPartition> {
               'Restarting',
               () => this.restartReplica(),
               () => true,
-              `Confirm Replica Restart`,
-              `Restart Replica for ${serviceName}`,
-              'confirm'
+              {
+                title:  `Confirm Replica Restart`
+              },
+              {
+                inputs: {
+                    message: `Restart Replica for ${serviceName}`,
+                    confirmationKeyword: 'confirm'
+                }
+              }
           ));
       } else if (this.isStatelessService) {
           this.actions.add(new ActionWithConfirmationDialog(
@@ -132,9 +135,15 @@ export class ReplicaOnPartition extends DataModelBase<IRawReplicaOnPartition> {
               'Deleting',
               () => this.deleteInstance(),
               () => true,
-              `Confirm Instance Delete`,
-              `Delete Instance for ${serviceName}`,
-              'confirm'
+              {
+                title:  `Confirm Instance Delete`
+              },
+              {
+                inputs: {
+                    message: `Delete Instance for ${serviceName}`,
+                    confirmationKeyword: 'confirm'
+                }
+              }
           ));
       }
 

@@ -13,7 +13,7 @@ import { PartitionDisableBackUpComponent } from 'src/app/modules/backup-restore/
 import { PartitionEnableBackUpComponent } from 'src/app/modules/backup-restore/partition-enable-back-up/partition-enable-back-up.component';
 import { PartitionTriggerBackUpComponent } from '../partition-trigger-back-up/partition-trigger-back-up.component';
 import { PartitionRestoreBackUpComponent } from '../partition-restore-back-up/partition-restore-back-up.component';
-import { IOnDateChange } from 'src/app/modules/event-store/double-slider/double-slider.component';
+import { IOnDateChange } from 'src/app/modules/time-picker/double-slider/double-slider.component';
 
 @Component({
   selector: 'app-backups',
@@ -41,7 +41,7 @@ export class BackupsComponent extends PartitionBaseControllerDirective {
     this.partitionBackupListSettings = this.settings.getNewOrExistingListSettings('partitionBackups', [null], [
       new ListColumnSetting('raw.BackupId', 'BackupId', {
         enableFilter: false,
-        getDisplayHtml: (item, property) =>  `<span class="link">${property}</span>`,
+        cssClasses: "link",
         clickEvent: item => item.action.run()
       }),
       new ListColumnSetting('raw.BackupType', 'BackupType'),
@@ -187,9 +187,15 @@ export class BackupsComponent extends PartitionBaseControllerDirective {
                 this.partition.partitionBackupInfo.partitionBackupConfigurationInfo.raw.Kind === 'Partition' &&
                 this.partition.partitionBackupInfo.partitionBackupConfigurationInfo.raw.PolicyInheritedFrom === 'Partition' &&
                 this.partition.partitionBackupInfo.partitionBackupConfigurationInfo.raw.SuspensionInfo.IsSuspended === false,
-          'Confirm Partition Backup Suspension',
-          `Suspend partition backup for ${this.partition.name} ?`,
-          this.partition.name));
+          {
+            title: 'Confirm Partition Backup Suspension'
+          },
+          {
+            inputs: {
+                message: `Suspend partition backup for ${this.partition.name} ?`,
+                confirmationKeyword: this.partition.name
+            }
+          }));
 
       this.actions.add(new ActionWithConfirmationDialog(
           this.data.dialog,
@@ -202,10 +208,16 @@ export class BackupsComponent extends PartitionBaseControllerDirective {
           () => this.partition.partitionBackupInfo.partitionBackupConfigurationInfo.raw &&
                 this.partition.partitionBackupInfo.partitionBackupConfigurationInfo.raw.Kind === 'Partition' &&
                 this.partition.partitionBackupInfo.partitionBackupConfigurationInfo.raw.PolicyInheritedFrom === 'Partition' &&
-                this.partition.partitionBackupInfo.partitionBackupConfigurationInfo.raw.SuspensionInfo.IsSuspended === true,
-          'Confirm Partition Backup Resumption',
-          `Resume partition backup for ${this.partition.name} ?`,
-          this.partition.name));
+          this.partition.partitionBackupInfo.partitionBackupConfigurationInfo.raw.SuspensionInfo.IsSuspended === true,
+          {
+            title: 'Confirm Partition Backup Resumption'
+          },
+          {
+            inputs: {
+                message: `Resume partition backup for ${this.partition.name} ?`,
+                confirmationKeyword: this.partition.name
+            }
+          }));
 
       this.actions.add(new IsolatedAction(
           this.data.dialog,

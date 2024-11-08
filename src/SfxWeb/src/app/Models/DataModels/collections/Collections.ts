@@ -50,6 +50,10 @@ export class ApplicationCollection extends DataModelCollectionBase<Application> 
         return RoutesService.getAppsViewPath();
     }
 
+    public get isArmManaged(): boolean {
+        return this.collection.some(app => app.isArmManaged);
+    }
+    
     public mergeClusterHealthStateChunk(clusterHealthChunk: IClusterHealthChunk): Observable<any> {
         return this.updateCollectionFromHealthChunkList(clusterHealthChunk.ApplicationHealthStateChunks, item => IdGenerator.app(IdUtils.nameToId(item.ApplicationName))).pipe(mergeMap(() => {
             this.updateAppsHealthState();
@@ -88,7 +92,7 @@ export class ApplicationCollection extends DataModelCollectionBase<Application> 
 
 export interface IAppTypeUsage {
   activeAppTypes: ApplicationType[];
-  inactiveTypes: ApplicationType[];
+  inactiveAppTypes: ApplicationType[];
 }
 
 export class ApplicationTypeGroupCollection extends DataModelCollectionBase<ApplicationTypeGroup> {
@@ -114,18 +118,18 @@ export class ApplicationTypeGroupCollection extends DataModelCollectionBase<Appl
       return this.data.getApps(true).pipe(map(() => {
           // check on refresh which appTypes are being used by at least one application
           const activeAppTypes = [];
-          const inactiveTypes = [];
+          const inactiveAppTypes = [];
           this.collection.forEach(appTypeGroup => appTypeGroup.appTypes.forEach(appType => {
             if (appType.isInUse) {
               activeAppTypes.push(appType);
             }else{
-              inactiveTypes.push(appType);
+              inactiveAppTypes.push(appType);
             }
           }))
 
           return {
             activeAppTypes,
-            inactiveTypes
+            inactiveAppTypes
           }
       }))
     }
@@ -427,9 +431,8 @@ export abstract class EventListBase<T extends FabricEventBase> extends DataModel
                 'Event Category',
                 {
                     enableFilter: true,
-                    getDisplayHtml: (item) => (!item.raw.category ? 'Operational' : item.raw.category)
                 }),
-            new ListColumnSetting('raw.timeStampString', 'Timestamp', {sortPropertyPaths: ['raw.timestamp']}),
+            new ListColumnSetting('raw.timeStampString', 'Timestamp', {sortPropertyPaths: ['raw.timeStamp']}),
             new ListColumnSetting('raw.timeStamp', 'Timestamp(UTC)')],
             [
                 new ListColumnSettingWithEventStoreFullDescription(),
@@ -497,7 +500,7 @@ export class NodeEventList extends EventListBase<NodeEvent> {
     }
 
     protected retrieveEvents(messageHandler?: IResponseMessageHandler): Observable<FabricEventInstanceModel<NodeEvent>[]> {
-        return this.data.restClient.getNodeEvents(this.queryStartDate, this.queryEndDate, this.nodeName, messageHandler)
+        return this.data.restClient.getNodeEvents(this.queryStartDate, this.queryEndDate, this.nodeName, this.eventsTypesFilter, messageHandler)
             .pipe(map(result => {
                 return result.map(event => new FabricEventInstanceModel<NodeEvent>(this.data, event));
             }));
@@ -552,7 +555,7 @@ export class ServiceEventList extends EventListBase<ServiceEvent> {
     }
 
     protected retrieveEvents(messageHandler?: IResponseMessageHandler): Observable<FabricEventInstanceModel<ServiceEvent>[]> {
-        return this.data.restClient.getServiceEvents(this.queryStartDate, this.queryEndDate, this.serviceId, messageHandler)
+        return this.data.restClient.getServiceEvents(this.queryStartDate, this.queryEndDate, this.serviceId, this.eventsTypesFilter, messageHandler)
             .pipe(map(result => {
                 return result.map(event => new FabricEventInstanceModel<ServiceEvent>(this.data, event));
             }));
@@ -577,7 +580,7 @@ export class PartitionEventList extends EventListBase<PartitionEvent> {
     }
 
     protected retrieveEvents(messageHandler?: IResponseMessageHandler): Observable<FabricEventInstanceModel<PartitionEvent>[]> {
-        return this.data.restClient.getPartitionEvents(this.queryStartDate, this.queryEndDate, this.partitionId, messageHandler)
+        return this.data.restClient.getPartitionEvents(this.queryStartDate, this.queryEndDate, this.partitionId, this.eventsTypesFilter, messageHandler)
             .pipe(map(result => {
                 return result.map(event => new FabricEventInstanceModel<PartitionEvent>(this.data, event));
             }));
@@ -604,7 +607,7 @@ export class ReplicaEventList extends EventListBase<ReplicaEvent> {
     }
 
     protected retrieveEvents(messageHandler?: IResponseMessageHandler): Observable<FabricEventInstanceModel<ReplicaEvent>[]> {
-        return this.data.restClient.getReplicaEvents(this.queryStartDate, this.queryEndDate, this.partitionId, this.replicaId, messageHandler)
+        return this.data.restClient.getReplicaEvents(this.queryStartDate, this.queryEndDate, this.partitionId, this.replicaId, this.eventsTypesFilter, messageHandler)
             .pipe(map(result => {
                 return result.map(event => new FabricEventInstanceModel<ReplicaEvent>(this.data, event));
             }));

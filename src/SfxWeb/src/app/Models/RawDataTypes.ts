@@ -22,6 +22,7 @@ export interface IRawApplication {
         Status: string;
         HealthState: string;
         ApplicationDefinitionKind: string;
+        ApplicationMetadata?: IRawApplicationMetadata
     }
 export class IRawBackupEntity{
     EntityKind: BackupEntityKind;
@@ -131,6 +132,8 @@ export interface IRawApplicationType {
         Status: string;
         StatusDetails: string;
         DefaultParameterList: IRawParameter[];
+        ApplicationTypeMetadata?: IRawApplicationTypeMetadata
+
     }
 
 export interface IRawUpgradeDomain {
@@ -270,6 +273,10 @@ export interface IRawApplicationUpgradeProgress {
         UpgradeUnits: IUpgradeUnitInfo[];
         CurrentUpgradeUnitsProgress: ICurrentUpgradeUnitsProgressInfo;
         IsNodeByNode: boolean;
+
+        HealthCheckPhase?: "Invalid" | "WaitDuration" | "StableDuration" | "Retry";
+        HealthCheckElapsedTime?: number;
+        HealthCheckRetryFlips?: number;
     }
 
 export interface IRawClusterHealth extends IRawHealth {
@@ -310,6 +317,9 @@ export interface IRawClusterUpgradeProgress {
         UpgradeUnits: IUpgradeUnitInfo[];
         CurrentUpgradeUnitsProgress: ICurrentUpgradeUnitsProgressInfo;
         IsNodeByNode: boolean;
+        HealthCheckPhase?: "Invalid" | "WaitDuration" | "StableDuration" | "Retry";
+        HealthCheckElapsedTime?: number;
+        HealthCheckRetryFlips?: number;
     }
 
 export interface IRawClusterLoadInformation {
@@ -448,6 +458,7 @@ export interface IRawNodeDeactivationInfo {
 export interface IRawNodeDeactivationTask {
         NodeDeactivationTaskId: IRawNodeDeactivationTaskId;
         NodeDeactivationIntent: string;
+        NodeDeactivationDescription?: string;
     }
 export interface IRawSchedule {
         ScheduleKind: string;
@@ -710,6 +721,7 @@ export interface IRawService {
         HasPersistedState: boolean; // Only shows up when this is a stateful service.
         HealthState: string;
         IsServiceGroup: boolean;
+        ServiceMetadata?: IRawServiceMetadata
     }
 
 export interface IRawServiceCorrelationDescription {
@@ -826,6 +838,7 @@ export interface IRawServiceTypeDescription {
         HasPersistedState: boolean;
         UseImplicitHost: boolean;
     }
+
 
 export interface IRawUpgradeDomainProgress {
         DomainName: string;
@@ -1136,4 +1149,19 @@ export interface IRawApplicationNameInfo{
 export interface IRawServiceNameInfo{
         Id: string;
         Name: string;
-    }
+}
+    
+export interface IRawApplicationMetadata{
+    ArmMetadata: IRawArmMetadata;
+}
+
+export interface IRawApplicationTypeMetadata{
+    ArmMetadata: IRawArmMetadata;
+}
+
+export interface IRawServiceMetadata{
+    ArmMetadata: IRawArmMetadata;
+}
+export interface IRawArmMetadata{
+    ArmResourceId?: string;
+}

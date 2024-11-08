@@ -10,7 +10,6 @@ import { DetailViewPartComponent } from './component/detail-view-part/detail-vie
 import { CollapseContainerComponent } from './component/collapse-container/collapse-container.component';
 import { RefreshRateComponent } from './component/refresh-rate/refresh-rate.component';
 import { DragDirective } from './directive/drag.directive';
-import { ActionDialogComponent } from './component/action-dialog/action-dialog.component';
 import { ManifestComponent } from './component/manifest/manifest.component';
 import { ActionCollectionDropDownComponent } from './component/action-collection-drop-down/action-collection-drop-down.component';
 import { NgbDropdownModule, NgbToastModule, NgbDatepickerModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
@@ -35,9 +34,12 @@ import {ClipboardModule} from '@angular/cdk/clipboard';
 
 import { WarningComponent } from './component/warning/warning.component';
 import { EventStoreTimelineComponent } from './component/event-store-timeline/event-store-timeline.component';
+import { FocusableDirective } from './directive/focusable.directive';
+import { ArmWarningComponent } from './component/arm-warning/arm-warning.component';
+
 @NgModule({
   declarations: [NavbarComponent, ClipBoardComponent, HealthBadgeComponent, CandyBarCompactComponent, DetailViewPartComponent,
-                 CollapseContainerComponent, RefreshRateComponent, DragDirective, ActionDialogComponent, ManifestComponent,
+                 CollapseContainerComponent, RefreshRateComponent, DragDirective, ManifestComponent,
                  ActionCollectionDropDownComponent, InputComponent, ToastContainerComponent, CheckBoxComponent,
                  ClusterUpgradeBannerComponent, DualDatePickerComponent, AdvancedOptionComponent, ReplicaAddressComponent,
                  FormatDatePipe, LocalTimeComponent, DisplayTimeComponent, ToggleComponent, StatusResolverComponent,
@@ -46,7 +48,7 @@ import { EventStoreTimelineComponent } from './component/event-store-timeline/ev
                  DisplayDurationComponent,
                  PhaseDiagramComponent,
                  NodeFilterComponent,
-                 WarningComponent, EventStoreTimelineComponent],
+                 WarningComponent, EventStoreTimelineComponent, FocusableDirective, ArmWarningComponent],
   imports: [
     CommonModule,
     RouterModule,
@@ -58,11 +60,11 @@ import { EventStoreTimelineComponent } from './component/event-store-timeline/ev
     ClipboardModule
   ],
   exports: [NavbarComponent, ClipBoardComponent, HealthBadgeComponent, CandyBarCompactComponent, DetailViewPartComponent,
-            CollapseContainerComponent, RefreshRateComponent, DragDirective, ActionDialogComponent, ManifestComponent,
+            CollapseContainerComponent, RefreshRateComponent, DragDirective, ManifestComponent,
             ActionCollectionDropDownComponent, InputComponent, ToastContainerComponent, CheckBoxComponent,
             ClusterUpgradeBannerComponent, DualDatePickerComponent, AdvancedOptionComponent, ReplicaAddressComponent,
             FormatDatePipe, LocalTimeComponent, DisplayTimeComponent, ToggleComponent, StatusResolverComponent,
             StateInfoComponent, EssentialItemComponent, DisplayDurationComponent, PhaseDiagramComponent, NodeFilterComponent,
-            WarningComponent, EventStoreTimelineComponent]
+            WarningComponent, EventStoreTimelineComponent, ArmWarningComponent]
 })
 export class SharedModule { }

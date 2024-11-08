@@ -15,10 +15,14 @@
 .tree-list {
   flex: 1;
   overflow: auto;
+  border: 2px solid transparent;
+}
+
+.focused {
+  border: 2px solid white;
 }
 
 .tree-header {
-  color: var(--font-accent-color);
   position: sticky;
   padding: 10px;
 }

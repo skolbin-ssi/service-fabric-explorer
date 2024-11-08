@@ -1,8 +1,11 @@
 import { Observable, of } from 'rxjs';
 import { mergeMap, finalize } from 'rxjs/operators';
 import { MatDialog } from '@angular/material/dialog';
-import { ActionDialogComponent } from '../shared/component/action-dialog/action-dialog.component';
+import { ActionDialogComponent } from '../modules/action-dialog/action-dialog/action-dialog.component';
 import { ComponentType } from '@angular/cdk/portal';
+import { IModalBody, IModalData, IModalTitle } from '../ViewModels/Modal';
+import { Type } from '@angular/core';
+import { DialogBodyComponent } from '../modules/action-dialog/DialogBodyComponent';
 
 // -----------------------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -89,7 +92,7 @@ export class ActionWithDialog extends Action {
     }
 }
 
-export class ActionWithConfirmationDialog extends ActionWithDialog {
+export class ActionWithConfirmationDialog extends ActionWithDialog implements IModalData {
     constructor(
         public dialog: MatDialog,
         public name: string,
@@ -97,15 +100,14 @@ export class ActionWithConfirmationDialog extends ActionWithDialog {
         public runningTitle: string,
         public execute: (...params: any[]) => Observable<any>,
         public canRun: () => boolean,
-        public confirmationDialogTitle?: string,
-        public confirmationDialogMessage?: string,
-        public confirmationKeyword?: string) {
-
+        public modalTitle : IModalTitle,
+        public modalBody?: IModalBody,
+    ) {
         super(dialog, name, title, runningTitle, execute, canRun);
     }
 }
 
-export class IsolatedAction extends Action {
+export class IsolatedAction extends Action implements IModalData{
     constructor(
         public dialog: MatDialog,
         public name: string,
@@ -114,7 +116,10 @@ export class IsolatedAction extends Action {
         public data: any,
         public template: ComponentType<any>,
         public canRun: () => boolean,
-        public beforeOpen?: () => Observable<any>) {
+        public beforeOpen?: () => Observable<any>,
+        public modalTitle?: IModalTitle,
+        public modalBody?: IModalBody,
+        ) {
 
         super(name, title, runningTitle, null, canRun);
     }

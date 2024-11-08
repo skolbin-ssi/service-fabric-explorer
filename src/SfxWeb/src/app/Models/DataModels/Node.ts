@@ -1,4 +1,4 @@
-import { IRawNode, IRawNodeLoadInformation, IRawNodeLoadMetricInformation, IRawNodeHealth, NodeStatus } from '../RawDataTypes';
+import { IRawNode, IRawNodeLoadInformation, IRawNodeLoadMetricInformation, IRawNodeHealth, NodeStatus, IRawNodeDeactivationTask } from '../RawDataTypes';
 import { IDecorators, DataModelBase } from './Base';
 import { DataService } from 'src/app/services/data.service';
 import { HealthStateFilterFlags, IClusterHealthChunkQueryDescription, IHealthStateFilter } from '../HealthChunkRawDataTypes';
@@ -23,7 +23,7 @@ export class Node extends DataModelBase<IRawNode> {
         decorators: {
             NodeUpTimeInSeconds: {
                 displayName: (name) => 'Node Up Time',
-                displayValueInHtml: (value) => this.nodeUpTime
+                displayValue: (value) => this.nodeUpTime
             }
         }
     };
@@ -81,6 +81,12 @@ export class Node extends DataModelBase<IRawNode> {
         return this.raw.NodeDeactivationInfo.NodeDeactivationStatus !== 'None';
     }
 
+    public get hasDeactivatingDescription(): boolean {
+        return this.isDeactivating && (
+            this.raw.NodeDeactivationInfo.NodeDeactivationTask.some(task => task.NodeDeactivationDescription?.length)
+        );
+    }
+    
     public addHealthStateFiltersForChildren(clusterHealthChunkQueryDescription: IClusterHealthChunkQueryDescription): IHealthStateFilter {
         // To get all deployed applications on this node, we need to add deployed application filters in all existing application filters.
         // (There will be at least one application filter there by default which is returned by DataService.getInitialClusterHealthChunkQueryDescription)
@@ -115,9 +121,15 @@ export class Node extends DataModelBase<IRawNode> {
             'Removing',
             () => this.removeNodeState(),
             () => this.raw.NodeStatus === NodeStatusConstants.Down,
-            'Confirm Node Removal',
-            `Data about node ${this.name} will be completely erased from the cluster ${window.location.host}. All data stored on the node will be lost permanently. Are you sure to continue?`,
-            this.name
+            {
+                title:  'Confirm Node Removal'
+            },
+            {
+                inputs: {
+                    message: `Data about node ${this.name} will be completely erased from the cluster ${window.location.host}. All data stored on the node will be lost permanently. Are you sure to continue?`,
+                    confirmationKeyword: this.name
+                }
+            }
             );
         removeNodeState.isAdvanced = true;
         this.actions.add(removeNodeState);
@@ -131,9 +143,15 @@ export class Node extends DataModelBase<IRawNode> {
             // There are various levels of "disabling" and it should be possible to disable "at a higher level" an already-disabled node.
             () => this.raw.NodeStatus !== NodeStatusConstants.Down,
             // We do not track the level of disabling, so we just enable the command as long as the node is not down.
-            'Confirm Node Deactivation',
-            `Deactivate node '${this.name}' from cluster '${window.location.host}'? This node will not become operational again until it is manually reactivated. WARNING: Deactivating nodes can cause data loss if not used with caution. For more information see: https://go.microsoft.com/fwlink/?linkid=825861`,
-            this.name
+            {
+                title:  'Confirm Node Deactivation'
+            },
+            {
+                inputs: {
+                    message: `Deactivate node '${this.name}' from cluster '${window.location.host}'? This node will not become operational again until it is manually reactivated. WARNING: Deactivating nodes can cause data loss if not used with caution. For more information see: https://go.microsoft.com/fwlink/?linkid=825861`,
+                    confirmationKeyword: this.name
+                }
+            }
         );
         deactivePauseNode.isAdvanced = true;
         this.actions.add(deactivePauseNode);
@@ -145,9 +163,15 @@ export class Node extends DataModelBase<IRawNode> {
             'Deactivating',
             () => this.deactivate(2),
             () => this.raw.NodeStatus !== NodeStatusConstants.Down,
-            'Confirm Node Deactivation',
-            `Deactivate node '${this.name}' from cluster '${window.location.host}'? This node will not become operational again until it is manually reactivated. WARNING: Deactivating nodes can cause data loss if not used with caution. For more information see: https://go.microsoft.com/fwlink/?linkid=825861`,
-            this.name
+            {
+                title:  'Confirm Node Deactivation'
+            },
+            {
+                inputs: {
+                    message: `Deactivate node '${this.name}' from cluster '${window.location.host}'? This node will not become operational again until it is manually reactivated. WARNING: Deactivating nodes can cause data loss if not used with caution. For more information see: https://go.microsoft.com/fwlink/?linkid=825861`,
+                    confirmationKeyword: this.name
+                }
+            }
         );
         deactiveRestartNode.isAdvanced = true;
         this.actions.add(deactiveRestartNode);
@@ -159,9 +183,15 @@ export class Node extends DataModelBase<IRawNode> {
             'Deactivating',
             () => this.deactivate(3),
             () => this.raw.NodeStatus !== NodeStatusConstants.Down,
-            'Confirm Node Deactivation',
-            `Deactivate node '${this.name}' from cluster '${window.location.host}'? This node will not become operational again until it is manually reactivated. WARNING: Deactivating nodes can cause data loss if not used with caution. For more information see: https://go.microsoft.com/fwlink/?linkid=825861`,
-            this.name
+            {
+                title:  'Confirm Node Deactivation'
+            },
+            {
+                inputs: {
+                    message: `Deactivate node '${this.name}' from cluster '${window.location.host}'? This node will not become operational again until it is manually reactivated. WARNING: Deactivating nodes can cause data loss if not used with caution. For more information see: https://go.microsoft.com/fwlink/?linkid=825861`,
+                    confirmationKeyword: this.name
+                }
+            }
         );
         deactiveRemoveNodeData.isAdvanced = true;
         this.actions.add(deactiveRemoveNodeData);
@@ -182,10 +212,16 @@ export class Node extends DataModelBase<IRawNode> {
             'Restarting',
             () => this.restart(),
             () => true,
-            'Confirm Node Restart',
-            `Restart node ${this.name} from the cluster ${window.location.host}?`,
-            // `Restart node ${this.name} from the cluster ${this.data.$location.host()}?`, TODO
-            this.name
+            {
+                title:  'Confirm Node Restart'
+            },
+            {
+                inputs: {
+                    message: `Restart node ${this.name} from the cluster ${window.location.host}?`,
+                    // `Restart node ${this.name} from the cluster ${this.data.$location.host()}?`, TODO
+                    confirmationKeyword: this.name
+                }
+            }
         ));
     }
 

@@ -1,6 +1,6 @@
 @import "vars.scss";
 
-$modal-dt-width: 160px;
+$modal-dt-width: 180px;
 $modal-short-dt-width: 100px;
 $dialog-input-bg-color: #242424;
 
@@ -8,21 +8,29 @@ $dialog-input-bg-color: #242424;
     background-color: #373737;
     font-weight: var(--font-weight-normal);
 
-    .input-flat {
-        background-color: $dialog-input-bg-color;
-        border: 0px solid;
-        color: white;
-    }
-
     [type="checkbox"] + label:before {
         background-color: $dialog-input-bg-color;
     }
 
+    @media (max-height: 400px) {
+        .modal-header {
+            padding: 2px 15px !important;
+        }
+        .modal-footer {
+            padding: 2px 15px !important;
+        }
+    }
     .modal-header {
         color: white !important;
         background-color: var(--accent-darkblue) !important;
         padding: 18px 15px 18px 15px;
         border: none !important;
+
+        &.warning {
+            background-color: var(--badge-warning) !important;
+            color: var(--primary-background-color) !important;
+
+        }
 
         .modal-title {
           font-weight: var(--font-weight-normal);
@@ -32,9 +40,9 @@ $dialog-input-bg-color: #242424;
 
     .modal-body {
         color: var(--font-primary-color);
-        max-height: 550px;
+        max-height: 50vh;
         overflow-y: auto;
-        padding: 12px 15px 0px 15px;
+        padding: 12px 15px 5px 15px;
         border: none !important;
 
         .dl-horizontal {
@@ -55,7 +63,7 @@ $dialog-input-bg-color: #242424;
 
             dd {
                 padding: 5px 0px;
-
+                width: calc(100% - $modal-dt-width);
                 dl {
                     margin-top: 5px;
                 }
@@ -83,7 +91,7 @@ $dialog-input-bg-color: #242424;
                     margin-top: -4px;
                 }
 
-                .table {
+                .default-table {
                     margin-bottom: 0;
                     color: white;
                     thead > tr > th {
@@ -107,7 +115,7 @@ $dialog-input-bg-color: #242424;
 }
 
 
-.mat-dialog-container-wrapper .mat-dialog-container {
+.mat-mdc-dialog-container-wrapper .mat-dialog-container {
     padding: 0px;
 }
 

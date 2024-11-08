@@ -24,7 +24,7 @@ export class DeployedReplica extends DataModelBase<IRawDeployedReplica> {
         decorators: {
             LastInBuildDurationInSeconds: {
                 displayName: (name) => 'Last In Build Duration',
-                displayValueInHtml: (value) => this.lastInBuildDuration
+                displayValue: (value) => this.lastInBuildDuration
             }
         }
     };
@@ -126,9 +126,15 @@ export class DeployedReplica extends DataModelBase<IRawDeployedReplica> {
             'Restarting',
             () => this.restartReplica(),
             () => true,
-            `Confirm Replica Restart`,
-            `Restart Replica for ${serviceName}`,
-            'confirm'
+            {
+                title:  `Confirm Replica Restart`
+            },
+            {
+                inputs: {
+                    message: `Restart Replica for ${serviceName}`,
+                    confirmationKeyword: 'confirm'
+                }
+            }
         ));
     }
 }

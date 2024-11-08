@@ -3,7 +3,7 @@ import { map, mergeMap } from 'rxjs/operators';
 import { Constants, StatusWarningLevel } from 'src/app/Common/Constants';
 import { IResponseMessageHandler } from 'src/app/Common/ResponseMessageHandlers';
 import { DataService } from 'src/app/services/data.service';
-import { Counter } from 'src/app/Utils/Utils';
+import { Counter, Utils } from 'src/app/Utils/Utils';
 import { DataModelBase } from '../Base';
 import { InfrastructureJob } from '../infrastructureJob';
 import { DataModelCollectionBase } from './CollectionBase';
@@ -38,7 +38,7 @@ export class InfrastructureCollectionItem extends DataModelBase<IInfrastructureC
 
 export class InfrastructureCollection extends DataModelCollectionBase<InfrastructureCollectionItem> {
   static readonly bannerThrottledJobs = 'throttled-banner';
-
+  static readonly CoordinatedPrefix = "Coordinated_";
   public throttledJobs: InfrastructureJob[];
 
   public constructor(data: DataService) {
@@ -72,10 +72,7 @@ export class InfrastructureCollection extends DataModelCollectionBase<Infrastruc
       this.data.warnings.addOrUpdateNotification({
         message: `Active updates count has exceeded the max allowed for safe rollout of updates for
                     ${throttledIS.map(is => is.name).join(",")}
-                    Once the existing updates complete, the pending updates will start automatically
-                    To forcefully allow an MR job to go through, connect to the SF cluster and execute this command:
-                    Invoke-ServiceFabricInfrastructureCommand -ServiceName <InfrastructureService Name like fabric:/System/InfrastructureService/nt1>
-                    -Command AllowAction:<MR_job-id_guid>:*:Prepare`,
+                    Once the existing updates complete, the pending updates will start automatically.`,
         level: StatusWarningLevel.Warning,
         priority: 4,
         id: InfrastructureCollection.bannerThrottledJobs,
@@ -89,7 +86,24 @@ export class InfrastructureCollection extends DataModelCollectionBase<Infrastruc
         counter.add(node.raw.Type);
       })
 
-      const nodetypesWithoutEnoughNodes = this.collection.map(is => InfrastructureCollection.stripPrefix(is.name)).filter(is => (counter.entries().find(count => count.key === is)?.value || 0) < 5);
+      //condense cross AZ infrastructure services
+      const condensedIS = new Set<string>();
+      this.collection.forEach(is => {
+        condensedIS.add(InfrastructureCollection.stripPrefix(is.name).split("/")[0]);
+      })
+
+      const nodetypesWithoutEnoughNodes = Array.from(condensedIS).filter(is => {
+        //if IS is Coordinated_{GUID}
+        if(is.startsWith(InfrastructureCollection.CoordinatedPrefix)) {
+          const potentialGUID = is.slice(InfrastructureCollection.CoordinatedPrefix.length);
+          //ONLY if GUID skip check otherwise check incase name is Coordinated_notguid
+          if(Utils.isGUID(potentialGUID)) {
+            return false;
+          }
+        }
+
+        return (counter.entries().find(count => count.key === is)?.value || 0) < 5;
+      });
 
       if (nodetypesWithoutEnoughNodes.length > 0) {
         this.data.warnings.addOrUpdateNotification({
